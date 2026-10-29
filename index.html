@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>המסע לתאילנד</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f8f6;--card:#fff;--ink:#12302f;--mute:#5f7977;--sea:#0b5d5b;--mango:#f4a300;--lotus:#d63f6c;--line:#d6e4e1}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1f1e;--card:#15302e;--ink:#e8f3f1;--mute:#93b0ac;--sea:#4fc3bd;--line:#264846}}
+*{box-sizing:border-box}
+body{margin:0;font-family:Heebo,Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:80px}
+header{background:linear-gradient(160deg,#0b5d5b,#0f8a7e 60%,#f4a300);color:#fff;padding:28px 18px 22px;border-radius:0 0 28px 28px}
+h1{margin:0;font-size:30px;font-weight:800}
+.sub{opacity:.9;margin-top:4px}
+.count{margin-top:14px;display:inline-block;background:#0004;padding:8px 14px;border-radius:12px;font-weight:600}
+main{max-width:720px;margin:auto;padding:16px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);z-index:5}
+nav button{flex:1;border:0;background:none;padding:10px 2px;font:inherit;font-size:12px;color:var(--mute);cursor:pointer}
+nav button b{display:block;font-size:20px;font-weight:400}
+nav button.on{color:var(--sea);font-weight:800}
+.tab{display:none}.tab.on{display:block}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 14px;border-radius:99px;font:inherit;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--sea);color:#fff;border-color:var(--sea)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.card h3{margin:0 0 4px;font-size:17px}
+.card p{margin:4px 0;color:var(--mute);white-space:pre-wrap}
+.tag{font-size:12px;color:var(--sea);font-weight:600}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.btn{border:0;background:var(--sea);color:#fff;padding:9px 15px;border-radius:10px;font:inherit;cursor:pointer;text-decoration:none;font-size:14px}
+.btn.alt{background:none;color:var(--sea);border:1px solid var(--sea)}
+.btn.del{background:none;color:var(--lotus);border:1px solid var(--lotus)}
+.add{width:100%;margin:6px 0 14px;padding:12px;font-weight:600;background:var(--mango);color:#2a1d00}
+.task{display:flex;gap:10px;align-items:center;padding:11px 14px}
+.task input{width:20px;height:20px;accent-color:var(--sea)}
+.task.done span{text-decoration:line-through;opacity:.5}
+.task span{flex:1}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--bg);color:var(--ink);margin-top:4px}
+label{display:block;margin-top:10px;font-size:14px;color:var(--mute)}
+#modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:10}
+#modal.on{display:flex}
+#box{background:var(--card);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px}
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:99px;font-size:14px;opacity:0;transition:.3s;z-index:20;pointer-events:none}
+#toast.on{opacity:1}
+.empty{text-align:center;color:var(--mute);padding:24px}
+pre{background:var(--bg);padding:10px;border-radius:10px;overflow:auto;direction:ltr;text-align:left;font-size:12px}
+.big{font-size:22px;font-weight:800}
+</style>
+</head>
+<body>
+<header>
+  <h1>🇹🇭 המסע לתאילנד</h1>
+  <div class="sub">בנגקוק · צ'אנג מאי · קופנגן · קוסמוי</div>
+  <div class="count" id="count"></div>
+</header>
+<main>
+  <section class="tab on" id="t-days"></section>
+  <section class="tab" id="t-places"></section>
+  <section class="tab" id="t-tasks"></section>
+  <section class="tab" id="t-docs"></section>
+  <section class="tab" id="t-tools"></section>
+</main>
+<nav id="nav"></nav>
+<div id="modal"><div id="box"></div></div>
+<div id="toast"></div>
+
+<script>
+const CITIES=["בנגקוק","צ'אנג מאי","קופנגן","קוסמוי"];
+const CATS=["מסעדה 🍜","בית קפה ☕","אטרקציה 📸","שופינג 🛍️","חוף 🏝️","לילה 🍹"];
+const DOCCATS=["טיסות ✈️","מלונות 🏨","תחבורה 🚌","ביטוח 🛡️","כללי 📄"];
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const DEFAULT={start:"",ts:0,
+ days:[
+  ["בנגקוק","יום 1: נחיתה","התמקמות במלון, שוק לילה ואוכל רחוב"],
+  ["בנגקוק","יום 2: העיר העתיקה","ארמון המלך, ואט פו, ואט ארון, סיור בתעלות"],
+  ["בנגקוק","יום 3: שופינג ואוכל","צ'טוצ'אק, מגה מולים, ירכסי צ'יינהטאון בערב"],
+  ["צ'אנג מאי","יום 4: טיסה לצ'אנג מאי","העיר העתיקה, מקדשים, שוק ליל ראשון"],
+  ["צ'אנג מאי","יום 5: פילים","שמורת פילים אתית, בישול תאילנדי"],
+  ["צ'אנג מאי","יום 6: דוי סוטפ","מקדש על ההר, קפה בהרים, ספא"],
+  ["קופנגן","יום 7: טיסה לקוסמוי ומעבורת","הגעה לקופנגן, התמקמות"],
+  ["קופנגן","יום 8: חופים","חוף האד רין, קיאקים, שקיעה"],
+  ["קופנגן","יום 9: יום חופשי","שנורקלינג, אוכל מקומי"],
+  ["קוסמוי","יום 10: מעבורת לקוסמוי","חוף שאוונג, מסעדות ליד המים"],
+  ["קוסמוי","יום 11: אי","בודהה הגדול, אנג תונג מרין פארק"],
+  ["קוסמוי","יום 12: טיסה הביתה","נסיעה לשדה"]
+ ].map(d=>({id:uid(),city:d[0],title:d[1],desc:d[2]})),
+ places:[
+  {id:uid(),name:"שוק צ'טוצ'אק",city:"בנגקוק",cat:CATS[3],addr:"Chatuchak Market Bangkok",note:"שישי-ראשון, לצאת מוקדם"},
+  {id:uid(),name:"ואט פו",city:"בנגקוק",cat:CATS[2],addr:"Wat Pho Bangkok",note:"בודהה שוכב"},
+  {id:uid(),name:"שוק ליל ראשון",city:"צ'אנג מאי",cat:CATS[3],addr:"Sunday Walking Street Chiang Mai",note:"אוכל רחוב וממכרים"},
+  {id:uid(),name:"האד רין",city:"קופנגן",cat:CATS[4],addr:"Haad Rin Beach Koh Phangan",note:"חוף מרכזי"},
+  {id:uid(),name:"בודהה הגדול",city:"קוסמוי",cat:CATS[2],addr:"Big Buddha Koh Samui",note:"נוף יפה בשקיעה"}
+ ],
+ tasks:["דרכון בתוקף 6 חודשים","ביטוח נסיעות","כרטיס SIM או eSIM","מטען ומתאם לשקע","קרם הגנה וכובע","כרטיס אשראי ללא עמלות","הזמנת מעבורות"].map(t=>({id:uid(),t,done:false})),
+ docs:[]};
+
+let S=JSON.parse(localStorage.getItem('thS')||'null')||DEFAULT;
+let URLX=localStorage.getItem('thUrl')||'';
+let cityF='הכל',catF='הכל',tab='days',rate=0.11,timer=null;
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)}
+function persist(){S.ts=Date.now();localStorage.setItem('thS',JSON.stringify(S));clearTimeout(timer);if(URLX)timer=setTimeout(push,1500);render()}
+
+async function push(){
+  if(!URLX)return toast('הדבק קישור Google Sheets בלשונית כלים');
+  try{await fetch(URLX,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(S)});toast('נשמר בענן ☁️')}
+  catch(e){toast('שמירה נכשלה, בדוק את הקישור')}
+}
+async function pull(silent){
+  if(!URLX)return;
+  try{
+    const r=await fetch(URLX);const d=await r.json();
+    if(d&&d.days&&(d.ts||0)>(S.ts||0)){S=d;localStorage.setItem('thS',JSON.stringify(S));render();if(!silent)toast('עודכן מהענן 🔄')}
+    else if(!silent)toast('הכול מעודכן ✓')
+  }catch(e){if(!silent)toast('טעינה נכשלה, בדוק את הקישור')}
+}
+
+function form(title,fields,init,onSave,onDelete){
+  const b=document.getElementById('box');
+  b.innerHTML=`<h2>${title}</h2>`+fields.map(f=>{
+    const v=esc(init[f.k]||'');
+    if(f.opts)return `<label>${f.l}<select data-k="${f.k}">${f.opts.map(o=>`<option ${o==init[f.k]?'selected':''}>${o}</option>`).join('')}</select></label>`;
+    if(f.area)return `<label>${f.l}<textarea rows="4" data-k="${f.k}">${v}</textarea></label>`;
+    return `<label>${f.l}<input data-k="${f.k}" value="${v}"></label>`}).join('')+
+  `<div class="row"><button class="btn" id="sv">שמור</button><button class="btn alt" id="cx">ביטול</button>${onDelete?'<button class="btn del" id="dl">מחק</button>':''}</div>`;
+  const m=document.getElementById('modal');m.classList.add('on');
+  const close=()=>m.classList.remove('on');
+  b.querySelector('#cx').onclick=close;
+  b.querySelector('#sv').onclick=()=>{const o={};b.querySelectorAll('[data-k]').forEach(e=>o[e.dataset.k]=e.value.trim());onSave(o);close()};
+  if(onDelete)b.querySelector('#dl').onclick=()=>{onDelete();close()};
+}
+document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')e.target.classList.remove('on')};
+
+function edit(list,fields,id,def){
+  const it=id?S[list].find(x=>x.id===id):null;
+  form(it?'עריכה':'הוספה',fields,it||def||{},o=>{if(it)Object.assign(it,o);else S[list].push({id:uid(),...o});persist()},it?()=>{S[list]=S[list].filter(x=>x.id!==id);persist()}:null);
+}
+const F={
+ days:[{k:'city',l:'עיר',opts:CITIES},{k:'title',l:'כותרת'},{k:'desc',l:'תוכנית',area:1}],
+ places:[{k:'name',l:'שם המקום'},{k:'city',l:'עיר',opts:CITIES},{k:'cat',l:'קטגוריה',opts:CATS},{k:'addr',l:'כתובת לניווט'},{k:'note',l:'הערה',area:1}],
+ docs:[{k:'cat',l:'קטגוריה',opts:DOCCATS},{k:'title',l:'כותרת'},{k:'det',l:'פרטים',area:1},{k:'link',l:'קישור (לא חובה)'}]
+};
+const chips=(arr,cur,fn)=>`<div class="chips">${['הכל',...arr].map(c=>`<button class="chip ${c===cur?'on':''}" onclick="${fn}('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('')}</div>`;
+window.setCity=c=>{cityF=c;render()};window.setCat=c=>{catF=c;render()};
+
+function render(){
+  const nav=[['days','📅','לו"ז'],['places','📍','מקומות'],['tasks','✅','צ\'קליסט'],['docs','📁','מסמכים'],['tools','💼','כלים']];
+  document.getElementById('nav').innerHTML=nav.map(n=>`<button class="${tab===n[0]?'on':''}" onclick="go('${n[0]}')"><b>${n[1]}</b>${n[2]}</button>`).join('');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id==='t-'+tab));
+  const c=document.getElementById('count');
+  if(S.start){const d=Math.ceil((new Date(S.start)-new Date())/864e5);c.textContent=d>0?`עוד ${d} ימים להמראה ✈️`:d===0?'ממריאים היום! ✈️':'בטיול! 🌴'}
+  else c.textContent='קבע תאריך יציאה בלשונית כלים';
+
+  const days=S.days.filter(d=>cityF==='הכל'||d.city===cityF);
+  t('days').innerHTML=chips(CITIES,cityF,'setCity')+`<button class="btn add" onclick="edit('days',F.days)">+ הוסף יום</button>`+
+   (days.map(d=>`<div class="card" onclick="edit('days',F.days,'${d.id}')"><span class="tag">${esc(d.city)}</span><h3>${esc(d.title)}</h3><p>${esc(d.desc)}</p></div>`).join('')||'<div class="empty">אין ימים בעיר הזו</div>');
+
+  const pl=S.places.filter(p=>(cityF==='הכל'||p.city===cityF)&&(catF==='הכל'||p.cat===catF));
+  t('places').innerHTML=chips(CITIES,cityF,'setCity')+chips(CATS,catF,'setCat')+`<button class="btn add" onclick="edit('places',F.places,null,{city:cityF==='הכל'?CITIES[0]:cityF})">+ הוסף מקום</button>`+
+   (pl.map(p=>`<div class="card"><span class="tag">${esc(p.city)} · ${esc(p.cat)}</span><h3>${esc(p.name)}</h3><p>${esc(p.note)}</p><div class="row">${p.addr?`<a class="btn" target="_blank" href="https://waze.com/ul?q=${encodeURIComponent(p.addr)}&navigate=yes">Waze</a><a class="btn alt" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.addr)}">Google Maps</a>`:''}<button class="btn alt" onclick="edit('places',F.places,'${p.id}')">עריכה</button></div></div>`).join('')||'<div class="empty">עוד אין מקומות כאן. הוסיפו את הראשון!</div>');
+
+  t('tasks').innerHTML=`<div class="row" style="margin:0 0 12px"><input id="nt" placeholder="משימה חדשה" style="flex:1;margin:0"><button class="btn" onclick="addTask()">הוסף</button></div>`+
+   S.tasks.map(k=>`<div class="card task ${k.done?'done':''}"><input type="checkbox" ${k.done?'checked':''} onchange="tog('${k.id}')"><span>${esc(k.t)}</span><button class="btn del" onclick="delTask('${k.id}')">✕</button></div>`).join('');
+
+  t('docs').innerHTML=`<button class="btn add" onclick="edit('docs',F.docs)">+ הוסף מסמך</button>`+
+   (S.docs.map(d=>`<div class="card"><span class="tag">${esc(d.cat)}</span><h3>${esc(d.title)}</h3><p>${esc(d.det)}</p><div class="row">${d.link?`<a class="btn" target="_blank" href="${esc(d.link)}">פתח קישור</a>`:''}<button class="btn alt" onclick="edit('docs',F.docs,'${d.id}')">עריכה</button></div></div>`).join('')||'<div class="empty">כאן שומרים אישורי טיסה, מלונות וביטוח</div>');
+
+  t('tools').innerHTML=`<div class="card"><h3>📆 תאריך יציאה</h3><input type="date" id="sd" value="${S.start||''}" onchange="S.start=this.value;persist()"></div>
+  <div class="card"><h3>☁️ סנכרון Google Sheets</h3><p>הדבק כאן את קישור ה-Web App (ראה הוראות בצ'אט). כל מי שמשתמש באותו קישור רואה את אותם נתונים.</p>
+  <input id="url" dir="ltr" placeholder="https://script.google.com/macros/s/.../exec" value="${esc(URLX)}">
+  <div class="row"><button class="btn" onclick="saveUrl()">חבר</button><button class="btn alt" onclick="push()">שמור לענן</button><button class="btn alt" onclick="pull()">טען מהענן</button></div>
+  <p>${URLX?'מחובר. שמירה אוטומטית אחרי כל שינוי.':'לא מחובר. הנתונים נשמרים רק במכשיר הזה.'}</p></div>
+  <div class="card"><h3>💵 המרת בהט לשקל</h3><div class="row"><input id="thb" type="number" placeholder="฿" oninput="conv()" style="flex:1;margin:0"><span>฿ ⇄ ₪</span><input id="ils" type="number" placeholder="₪" oninput="conv(1)" style="flex:1;margin:0"></div><p id="rt">שער: ${rate.toFixed(3)} ₪ לבהט</p></div>
+  <div class="card"><h3>🚨 מספרים חשובים</h3><p>משטרת תיירים: 1155\nחירום: 191\nשגרירות ישראל בבנגקוק: +66-2-204-9200</p></div>`;
+}
+const t=id=>document.getElementById('t-'+id);
+window.go=x=>{tab=x;render();scrollTo(0,0)};
+window.edit=edit;window.F=F;window.push=push;window.pull=pull;
+window.addTask=()=>{const v=document.getElementById('nt').value.trim();if(v){S.tasks.push({id:uid(),t:v,done:false});persist()}};
+window.tog=id=>{const k=S.tasks.find(x=>x.id===id);k.done=!k.done;persist()};
+window.delTask=id=>{S.tasks=S.tasks.filter(x=>x.id!==id);persist()};
+window.saveUrl=()=>{URLX=document.getElementById('url').value.trim();localStorage.setItem('thUrl',URLX);toast(URLX?'מחובר':'נותק');render();pull()};
+window.conv=r=>{const a=document.getElementById('thb'),b=document.getElementById('ils');if(r)a.value=b.value?(b.value/rate).toFixed(1):'';else b.value=a.value?(a.value*rate).toFixed(1):''};
+window.S=S;
+
+async function loadRate(){try{const r=await fetch('https://open.er-api.com/v6/latest/THB');const d=await r.json();if(d.rates&&d.rates.ILS){rate=d.rates.ILS;if(tab==='tools')render()}}catch(e){}}
+render();loadRate();pull(true);setInterval(()=>pull(true),30000);
+</script>
+</body>
+</html>
